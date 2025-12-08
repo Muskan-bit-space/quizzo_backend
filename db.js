@@ -1,9 +1,10 @@
 const mongoose = require('mongoose');
+require('dotenv').config();
 
 async function connectDB() {
   try {
     await mongoose.connect(      
-      "mongodb+srv://muskan4mann_db_user:muskan@cluster0.f2xqnke.mongodb.net/quizzoDB"
+      process.env.MONGOURL
     );
 
     console.log("Connected to MongoDB Atlas");
