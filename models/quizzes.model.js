@@ -1,11 +1,12 @@
 const mongoose=require('mongoose')
 const {model,Schema} =require('mongoose')
+// const{User}=require('./users.model')
 
-const quizztable_schema=new Schema({
+const quiztable_schema=new Schema({
     quiz_id:{
          
         type: mongoose.Schema.Types.ObjectId, 
-        ref:'Question',
+        ref:"Question",
         required:true
     },
     author_id:{
@@ -15,7 +16,7 @@ const quizztable_schema=new Schema({
         required:true
     }    ,
     // options:{Number:String},
-    correct_response:[{Number:[String]}]
+    // correct_response:[{Number]
 })
-const Quiz =model('Quiz',quizztable_schema)
+const Quiz =model('Quiz',quiztable_schema)
 module.exports={Quiz};

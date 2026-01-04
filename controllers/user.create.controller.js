@@ -1,5 +1,5 @@
 const {User}=require('../models/users.model');
-async function user_create() {
+async function user_create(pwd,mail) {
     try {
         // const user=await User.create({
         // username:"MUSKAN_username",
@@ -8,16 +8,18 @@ async function user_create() {
         // })
 
         const user=await User.create({
-        username:"CHINU_username",
-        password:"chinucba;o password",
-        designation:'Teacher'
+        email:mail,
+        // email:mail,
+        password:pwd,
+        quizzes_created:[]
+        // designation:desig
         })
 
         console.log(user)
         return user
         
     } catch (error) {
-        console.log(error)
+        console.log("usermodel err:",error)
     }
         
 }
