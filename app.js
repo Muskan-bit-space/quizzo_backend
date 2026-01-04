@@ -1,3 +1,8 @@
+// import dotenv from 'dotenv';
+const dotenv=require('dotenv')
+dotenv.config();
+const cors = require("cors");
+
 const express = require('express');
 const path = require('path');
 const {connectDB}=require('./db')
@@ -5,10 +10,39 @@ const Question=require('./models/qtable.model')
 const qtable_create=require('./controllers/qtable.create.controller')
 const user_create=require('./controllers/user.create.controller')
 const quiz_create=require('./controllers/quiz.create.controller')
+const {joinquiz,createquiz}=require('./controllers/SocketController')
 const app = express();
-const {MongoClient}=require('mongoose')
-// Middleware to parse URL-encoded bodies------------------------------------------------
 app.use(express.urlencoded({ extended: true }));
+
+app.use(cors({
+    origin: process.env.CORS_ORIGIN
+}));
+
+///////////////////////////////////////////
+const {createServer}=require('http')
+const {Server}=require('socket.io')
+////////////////////////////////////////////
+const {MongoClient}=require('mongoose')
+const httpServer=createServer(app);
+const io=new Server(httpServer,{
+  cors:{origin:process.env.CORS_ORIGIN}
+})
+
+io.on('connection',(socket)=>{
+  console.log(`socket connected:${socket}`)
+  socket.on('join-quiz',(msg)=>{
+    joinquiz(socket);
+  })
+
+  socket.on('create-quiz',(msg)=>{
+    createquiz(socket);
+  })
+
+  
+  
+})
+// Middleware to parse URL-encoded bodies------------------------------------------------
+
 // ------------------------------------------------------------------------------------------
 const PORT = process.env.PORT || 4444;
 app.get('/create',(req,res)=>{
@@ -37,7 +71,13 @@ app.get('/qc',async (req,res)=>{
 app.get('/',(req,res)=>{
   res.send("on root")
 })
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-  connectDB();
-}); 
+// app.listen(PORT, () => {
+//   console.log(`Server is running on port ${PORT}`);
+//   connectDB();
+// }); 
+
+// socket server code  --------------------------------------START-----------------------------------
+httpServer.listen(4444,()=>{
+  console.log("server on 4444 ")
+})
+// socket server code --------------------------------------------END-----------------------------
