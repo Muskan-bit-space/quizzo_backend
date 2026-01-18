@@ -50,7 +50,7 @@ app.get('/create',(req,res)=>{
   res.send("blog created: ")
   res.json(b)
 })
-app.post('/signup',async(req,res)=>{
+app.get('/signup',async(req,res)=>{
   // const r=req.body;
   // const b=user_create(req.body.mail, req.body.pwd);
   // console.log("hey");
