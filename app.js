@@ -56,11 +56,13 @@ app.get('/signup',async(req,res)=>{
   // console.log("hey");
   
   const{mail,pwd}=req.query;
-  const b=await user_create(mail, pwd);  //kyunki ek promise aayega hmesha from an async 
-  // function and hmei use resilve hone dena h
+  const user_created=await user_create(mail, pwd);  
+  //kyunki ek promise aayega hmesha from an async 
+  // function and hmei use resolve hone dena h
   // user_create( req.body.pwd);
   // res.send("user created: ",);
-  res.json(b.toObject());
+  console.log(user_created)
+  res.json(user_created.toObject());
 })
 app.get('/qc',async (req,res)=>{
   const b=await quiz_create();

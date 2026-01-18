@@ -14,7 +14,7 @@ async function user_create(pwd,mail) {
         quizzes_created:[]
         // designation:desig
         })
-
+        // console.log("in user creation fnctn")
         console.log(user)
         return user
         
