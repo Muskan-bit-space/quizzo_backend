@@ -61,8 +61,11 @@ app.get('/signup',async(req,res)=>{
   // function and hmei use resolve hone dena h
   // user_create( req.body.pwd);
   // res.send("user created: ",);
-  console.log(user_created)
-  res.json(user_created.toObject());
+  console.log("user_created ",user_created)
+  if(user_created!=undefined) res.json(user_created);
+  else res.json({
+    "userfound":"no"
+  })
 })
 app.get('/qc',async (req,res)=>{
   const b=await quiz_create();
@@ -79,7 +82,9 @@ app.get('/',(req,res)=>{
 // }); 
 
 // socket server code  --------------------------------------START-----------------------------------
-httpServer.listen(4444,()=>{
-  console.log("server on 4444 ")
+httpServer.listen(process.env.PORT,()=>{
+  console.log("server on ",process.env.PORT);
+   connectDB();
+
 })
 // socket server code --------------------------------------------END-----------------------------
