@@ -11,11 +11,13 @@ const qtable_create=require('./controllers/qtable.create.controller')
 const user_create=require('./controllers/user.create.controller')
 const quiz_create=require('./controllers/quiz.create.controller')
 const {joinquiz,createquiz}=require('./controllers/SocketController')
+const {pre_signin}=require('./controllers/auth.controller')
 const app = express();
 app.use(express.urlencoded({ extended: true }));
 
-app.use(cors({
-    origin: process.env.CORS_ORIGIN
+app.use(cors({  
+    origin: process.env.CORS_ORIGIN,
+    credentials:true
 }));
 
 ///////////////////////////////////////////
@@ -50,7 +52,7 @@ app.get('/create',(req,res)=>{
   res.send("blog created: ")
   res.json(b)
 })
-app.get('/signup',async(req,res)=>{
+app.post('/signup',async(req,res)=>{
   // const r=req.body;
   // const b=user_create(req.body.mail, req.body.pwd);
   // console.log("hey");
@@ -62,11 +64,38 @@ app.get('/signup',async(req,res)=>{
   // user_create( req.body.pwd);
   // res.send("user created: ",);
   console.log("user_created ",user_created)
-  if(user_created!=undefined) res.json(user_created);
+  if(user_created!=undefined){
+    res.json(user_created);
+
+  } 
   else res.json({
-    "userfound":"no"
+    "usercreated":"no"
   })
 })
+
+app.post('/signin/email/password',async (req,res)=>{
+  //another auth ka function for setting the cookie
+  const {email,password}=req.body;
+  const user_exists=await pre_signin(email,password);     ///this will find if the user has signed up or not
+
+
+  //now set the cookie:
+
+  if(user_exists){
+    res.cookie(email,password,{
+      httpOnly:true
+    })
+    res.send("cookie created babay")
+  }
+
+  else{
+    res.send("user not found or cookie-making method ain't working")
+  }
+
+  
+})
+
+
 app.get('/qc',async (req,res)=>{
   const b=await quiz_create();
   // res.send("quiz created: ")
