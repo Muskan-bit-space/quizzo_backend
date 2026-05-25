@@ -57,13 +57,13 @@ app.post('/signup',async(req,res)=>{
   // const b=user_create(req.body.mail, req.body.pwd);
   // console.log("hey");
   
-  const{mail,pwd}=req.query;
-  const user_created=await user_create(mail, pwd);  
+  const{email, password}=req.query;
+  const user_created=await user_create(email, password);  
   //kyunki ek promise aayega hmesha from an async 
   // function and hmei use resolve hone dena h
   // user_create( req.body.pwd);
   // res.send("user created: ",);
-  console.log("user_created ",user_created)
+  // console.log("user_created ",user_created)
   if(user_created!=undefined){
     res.json(user_created);
 
