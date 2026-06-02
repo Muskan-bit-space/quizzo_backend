@@ -103,7 +103,7 @@ app.get('/qc',async (req,res)=>{
 })
   // blog_create();
 app.get('/',(req,res)=>{
-  res.send("on root")
+  res.send("you are on the get endppoint of the root")
 })
 // app.listen(PORT, () => {
 //   console.log(`Server is running on port ${PORT}`);
