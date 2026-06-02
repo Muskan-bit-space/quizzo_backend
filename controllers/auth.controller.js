@@ -1,7 +1,9 @@
 const {User}=require('../models/users.model')
+const user_create=require('../controllers/user.create.controller')
 async function signup(req,res,next){
     //find the user using mongoose  command:
     const{email,password}=req.body
+    // console.log(req.body)
     try{
         const does_user_Exist=await User.findOne({email:email,password:password});
         if(does_user_Exist===null){
