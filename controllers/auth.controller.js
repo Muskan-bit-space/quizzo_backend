@@ -22,8 +22,30 @@ async function signup(req,res,next){
     
 }
 
-
 /////////signin function
 
+async function signin(req,res,next){
+    //take out the email and pwd
+    const{email,password}=req.body;
+    //find a user using the email
+    const user=await User.findOne({email:email});
+    if(user===null){
+        console.log("no user with this email")
+    }
+    else{
+        if(user.password===password){
+            console.log("logged in")
+        }
+        else{
+            console.log("wrong pwd")
+        }
+    }
+     //if found then 
+        //then check its pwd
+            //if pwd matched then clg signed in 
+            //else wrong pwd
+     // else say no user found
 
-module.exports={signup}
+}
+
+module.exports={signup,signin}
