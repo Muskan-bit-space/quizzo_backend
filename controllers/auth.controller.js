@@ -1,5 +1,7 @@
 const {User}=require('../models/users.model')
 const user_create=require('../controllers/user.create.controller')
+const {jwtmaker}=require('./jwt.maker.controller');
+const { LEGAL_TLS_SOCKET_OPTIONS } = require('mongodb');
 async function signup(req,res,next){
     //find the user using mongoose  command:
     const{email,password}=req.body
@@ -25,26 +27,50 @@ async function signup(req,res,next){
 /////////signin function
 
 async function signin(req,res,next){
-    //take out the email and pwd
-    const{email,password}=req.body;
-    //find a user using the email
-    const user=await User.findOne({email:email});
-    if(user===null){
-        console.log("no user with this email")
-    }
-    else{
-        if(user.password===password){
-            console.log("logged in")
+    try{
+        //take out the email and pwd
+        const{email,password}=req.body;
+        //find a user using the email
+        const user=await User.findOne({email:email});
+        if(user===null){
+            console.log("no user with this email")
+            res.send("no user with this email")
         }
         else{
-            console.log("wrong pwd")
+            if(user.password===password){
+                let token=1;
+                try {
+                    token=jwtmaker('merasecret',{'mail':email});
+                } catch (error) {
+                    console.log("maker call err: " ,error.message)
+                }
+                console.log("logged in");
+                /*set the cookie*/
+                // document.cookie=`token=${token};path=/;HTTPOnly;Secure;SameSite=Strict`;
+                console.log(`token=${token}`)
+                res.send({"token":token})
+                //token bnao-> function
+                //token send krdo
+            }
+            else{
+                console.log("wrong pwd")
+                throw "wrong pwd"
+                // res.send("wrong pwd")
+            }
         }
+        //if found then 
+            //then check its pwd
+                //if pwd matched then clg signed in 
+                //else wrong pwd
+        // else say no user found
     }
-     //if found then 
-        //then check its pwd
-            //if pwd matched then clg signed in 
-            //else wrong pwd
-     // else say no user found
+    catch(e){
+        console.log("pre signin error: ", e)
+        // res.send("pre signin error: ", e)
+        throw new Error(e);
+        // throw new Error(e.message);
+        
+    }
 
 }
 
