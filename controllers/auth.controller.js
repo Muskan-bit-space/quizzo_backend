@@ -2,6 +2,8 @@ const {User}=require('../models/users.model')
 const user_create=require('../controllers/user.create.controller')
 const {jwtmaker}=require('./jwt.maker.controller');
 const { LEGAL_TLS_SOCKET_OPTIONS } = require('mongodb');
+let dotenv =require("dotenv");
+dotenv.config();
 async function signup(req,res,next){
     //find the user using mongoose  command:
     const{email,password}=req.body
@@ -40,7 +42,8 @@ async function signin(req,res,next){
             if(user.password===password){
                 let token=1;
                 try {
-                    token=jwtmaker('merasecret',{'mail':email});
+                    token=jwtmaker(process.env.JWT_SECRET,{'mail':email});
+                    // token=jwtmaker('merasecret',{'mail':email});
                 } catch (error) {
                     console.log("maker call err: " ,error.message)
                 }
@@ -73,5 +76,9 @@ async function signin(req,res,next){
     }
 
 }
-
-module.exports={signup,signin}
+async function getMe(req,res,next){
+    return res.status(200).json({
+        user:req.user
+    })
+}
+module.exports={signup,signin,getMe}
