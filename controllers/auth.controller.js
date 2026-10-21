@@ -14,7 +14,9 @@ async function signup(req,res,next){
             //then sign in the user
             const user_created=await user_create(email, password);
             console.log("user_created: ",user_created)  
+            res.json( user_created)
             return user_created
+
         }
         else return "user already present"
 
@@ -58,7 +60,7 @@ async function signin(req,res,next){
             else{
                 console.log("wrong pwd")
                 throw "wrong pwd"
-                // res.send("wrong pwd")
+                res.send("wrong pwd")
             }
         }
         //if found then 
