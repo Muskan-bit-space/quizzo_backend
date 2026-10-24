@@ -149,4 +149,33 @@ async function createQuiz(req, res) {
   }
 }
 
-module.exports = { createQuiz };
+async function getMyQuizzes(req, res) {
+  try {
+    const ownerId = req.user?._id || req.user?.id;
+
+    if (!ownerId || !mongoose.isValidObjectId(ownerId)) {
+      return res.status(401).json({ error: "Authenticated user not found." });
+    }
+
+    const quizzes = await Quiz.find({ owner: ownerId })
+      .select("_id title description questions createdAt updatedAt")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const payload = quizzes.map((quiz) => ({
+      id: quiz._id,
+      title: quiz.title,
+      description: quiz.description,
+      questionCount: quiz.questions.length,
+      createdAt: quiz.createdAt,
+      updatedAt: quiz.updatedAt,
+    }));
+
+    return res.status(200).json({ quizzes: payload });
+  } catch (error) {
+    console.error("getMyQuizzes failed:", error);
+    return res.status(500).json({ error: "Unable to fetch quizzes. Please try again." });
+  }
+}
+
+module.exports = { createQuiz, getMyQuizzes };
