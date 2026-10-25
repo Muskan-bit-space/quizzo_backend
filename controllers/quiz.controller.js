@@ -1,181 +1,43 @@
-
-const mongoose = require("mongoose");
 const Quiz = require("../models/quizzes.model");
-
-const MAX_QUESTIONS = 200;
-const MAX_OPTIONS = 10;
+const Attempt = require("../models/attempts.model");
+const { User } = require("../models/users.model");
+const { quizInput } = require("../lib/validation");
+const { quizSummary, publicQuestion, userName } = require("../lib/serializers");
+const { newShareId, ensurePublished, ownedQuiz, sharedQuiz, quizStats } = require("../services/quizzes");
 
 async function createQuiz(req, res) {
-  try {
-    const { title, description = "", questions } = req.body || {};
-    console.log("received quiz: ", title, description , questions )
-
-    // Your requireAuth middleware must attach the verified user
-    // to req.user. Adjust this expression to match your middleware.
-    const ownerId = req.user?._id || req.user?.id;
-
-    if (!ownerId || !mongoose.isValidObjectId(ownerId)) {
-      return res.status(401).json({
-        error: "Authenticated user not found.",
-      });
-    }
-
-    if (typeof title !== "string" || !title.trim() ||  title.trim().length > 150) {
-      return res.status(400).json({
-        error: "Title is required and must be at most 150 characters.",
-      });
-    }
-
-    if (
-      typeof description !== "string" ||
-      description.length > 2000
-    ) {
-      return res.status(400).json({
-        error: "Description must be at most 2000 characters.",
-      });
-    }
-
-    if (
-      !Array.isArray(questions) ||
-      questions.length < 1 ||
-      questions.length > MAX_QUESTIONS
-    ) {
-      return res.status(400).json({
-        error: `A quiz must have 1–${MAX_QUESTIONS} questions.`,
-      });
-    }
-
-    // Whitelist allowed fields. Never pass req.body directly to MongoDB.
-    const cleanQuestions = [];
-
-    for (let i = 0; i < questions.length; i += 1) {
-      const question = questions[i];
-
-      if (
-        !question ||
-        typeof question.text !== "string" ||
-        !question.text.trim() ||
-        question.text.trim().length > 2000
-      ) {
-        return res.status(400).json({
-          error: `Question ${i + 1} has invalid text.`,
-        });
-      }
-
-      if (
-        !Array.isArray(question.options) ||
-        question.options.length < 2 ||
-        question.options.length > MAX_OPTIONS
-      ) {
-        return res.status(400).json({
-          error: `Question ${i + 1} must have 2–${MAX_OPTIONS} options.`,
-        });
-      }
-
-      const options = [];
-
-      for (const option of question.options) {
-        if (
-          typeof option !== "string" ||
-          !option.trim() ||
-          option.trim().length > 500
-        ) {
-          return res.status(400).json({
-            error: `Question ${i + 1} has an invalid option.`,
-          });
-        }
-
-        options.push(option.trim());
-      }
-
-      // Prevent confusing duplicate choices, ignoring case/outer spaces.
-      const normalizedOptions = options.map((option) =>
-        option.toLocaleLowerCase()
-      );
-
-      if (new Set(normalizedOptions).size !== options.length) {
-        return res.status(400).json({
-          error: `Question ${i + 1} contains duplicate options.`,
-        });
-      }
-
-      if (
-        !Number.isInteger(question.correctOption) ||
-        question.correctOption < 0 ||
-        question.correctOption >= options.length
-      ) {
-        return res.status(400).json({
-          error: `Question ${i + 1} has an invalid correct option.`,
-        });
-      }
-
-      cleanQuestions.push({
-        text: question.text.trim(),
-        options,
-        correctOption: question.correctOption,
-      });
-    }
-
-    const quiz = await Quiz.create({
-      title: title.trim(),
-      description: description.trim(),
-      questions: cleanQuestions,
-      owner: ownerId,
-    });
-
-    return res.status(201).json({
-      message: "Quiz created successfully.",
-      quiz: {
-        id: quiz._id,
-        title: quiz.title,
-        description: quiz.description,
-        questionCount: quiz.questions.length,
-        createdAt: quiz.createdAt,
-      },
-    });
-  } catch (error) {
-    if (error.name === "ValidationError" ||
-        error.name === "CastError") {
-      return res.status(400).json({
-        error: "Quiz data is invalid.",
-      });
-    }
-
-    console.error("createQuiz failed:", error);
-
-    return res.status(500).json({
-      error: "Unable to save the quiz. Please try again.",
-    });
-  }
+  const input = quizInput(req.body);
+  const quiz = await Quiz.create({ ...input, owner: req.user._id, shareId: newShareId(), version: 1, publishedAt: new Date() });
+  res.status(201).json({ message: "Quiz created successfully.", quiz: quizSummary(quiz, req.user) });
 }
-
 async function getMyQuizzes(req, res) {
-  try {
-    const ownerId = req.user?._id || req.user?.id;
-
-    if (!ownerId || !mongoose.isValidObjectId(ownerId)) {
-      return res.status(401).json({ error: "Authenticated user not found." });
-    }
-
-    const quizzes = await Quiz.find({ owner: ownerId })
-      .select("_id title description questions createdAt updatedAt")
-      .sort({ createdAt: -1 })
-      .lean();
-
-    const payload = quizzes.map((quiz) => ({
-      id: quiz._id,
-      title: quiz.title,
-      description: quiz.description,
-      questionCount: quiz.questions.length,
-      createdAt: quiz.createdAt,
-      updatedAt: quiz.updatedAt,
-    }));
-
-    return res.status(200).json({ quizzes: payload });
-  } catch (error) {
-    console.error("getMyQuizzes failed:", error);
-    return res.status(500).json({ error: "Unable to fetch quizzes. Please try again." });
-  }
+  const saved = await Quiz.find({ owner: req.user._id }).sort({ createdAt: -1, _id: -1 }).lean();
+  const quizzes = await Promise.all(saved.map(ensurePublished));
+  const stats = await quizStats(quizzes.map(quiz => quiz._id));
+  res.json({ quizzes: quizzes.map(quiz => quizSummary(quiz, req.user, stats.get(String(quiz._id)))) });
 }
-
-module.exports = { createQuiz, getMyQuizzes };
+async function getQuiz(req, res) {
+  const quiz = await ownedQuiz(req.params.quizId, req.user);
+  const stats = await quizStats([quiz._id]);
+  res.json({ quiz: {
+    ...quizSummary(quiz, req.user, stats.get(String(quiz._id))),
+    questions: quiz.questions.map(question => ({ ...publicQuestion(question), correctOption: question.correctOption })),
+  } });
+}
+async function getAttempts(req, res) {
+  const quiz = await ownedQuiz(req.params.quizId, req.user);
+  const attempts = await Attempt.find({ quizId: quiz._id, status: "submitted" })
+    .select("_id userId participantName result completedAt").sort({ completedAt: -1, _id: -1 }).lean();
+  res.json({ attempts: attempts.map(attempt => ({
+    id: String(attempt._id), userId: String(attempt.userId), participantName: attempt.participantName,
+    score: attempt.result.score, totalQuestions: attempt.result.totalQuestions,
+    percentage: attempt.result.percentage, completedAt: attempt.completedAt,
+  })) });
+}
+async function getSharedQuiz(req, res) {
+  const quiz = await sharedQuiz(req.params.shareId);
+  const owner = await User.findById(quiz.owner).select("name email").lean();
+  res.json({ quiz: { id: String(quiz._id), title: quiz.title, description: quiz.description || "",
+    shareId: quiz.shareId, ownerName: userName(owner), questionCount: quiz.questions.length } });
+}
+module.exports = { createQuiz, getMyQuizzes, getQuiz, getAttempts, getSharedQuiz };

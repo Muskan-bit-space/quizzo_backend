@@ -1,23 +1,13 @@
-const mongoose = require('mongoose');
-require('dotenv').config();
+const mongoose = require("mongoose");
+const { User } = require("./models/users.model");
+const Quiz = require("./models/quizzes.model");
+const Attempt = require("./models/attempts.model");
 
-async function connectDB() {
-  try {
-    
-    mongoose.connection.once("open", () => {
-      console.log("Connected to:", mongoose.connection.host);
-      console.log("DB Name:", mongoose.connection.name);
-
-    });
-    await mongoose.connect(      
-      process.env.MONGOURL  // is  wlae se connect hua h
-    );
-
-    // console.log("Connected to MongoDB Atlas");
-
-  } catch (error) {
-    console.error("MongoDB connection error:", error);
-  }
+async function connectDB(uri, options = {}) {
+  mongoose.set("bufferCommands", false);
+  await mongoose.connect(uri, { serverSelectionTimeoutMS: 10000, autoIndex: false, ...options });
+  // Create only declared indexes; never drop indexes or collections.
+  await Promise.all([User.createIndexes(), Quiz.createIndexes(), Attempt.createIndexes()]);
 }
-
-module.exports = { connectDB };
+async function disconnectDB() { await mongoose.disconnect(); }
+module.exports = { connectDB, disconnectDB };

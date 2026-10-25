@@ -1,37 +1,21 @@
-let jwt=require('jsonwebtoken')
-let dotenv=require('dotenv');
-let {User}=require("../models/users.model")
-dotenv.config();
-async function requireAuth(req,res,next){
-        console.log("requireAuth called");
+const jwt = require("jsonwebtoken");
+const { User } = require("../models/users.model");
+const { HttpError } = require("../lib/errors");
+const { objectId } = require("../lib/validation");
 
-    //get the token from the auth hdr
-    try {
-        let extracted_token=req.headers.authorization.split(' ')[1];
-        //bcz auth hdr : 'Authoraization <jwt>
-//check against the db 
-    let decoded=jwt.verify(extracted_token,process.env.JWT_SECRET)
-        console.log("decoded: ",decoded)
-        let user_data=await User.findOne({email:decoded.mail});
-        if(!user_data){
-            throw console.error("user not found in the db");
-            
-        }
-        if(user_data.email==decoded.mail){
-            // 
-    // if same then let the next() function be executed
-    console.log(
-        "here"
-    )
-            console.log("user found for jwt verify: ",user_data);
-            req.user=user_data
-                    console.log("6. calling next() of requireAuth");
-
-            next();
-        }
-    } catch (e) {
-        console.log("error in requireauth of backend: ", e);
-    }
-    
+async function requireAuth(req, res, next) {
+  const match = req.get("Authorization")?.match(/^Bearer ([^\s]+)$/i);
+  if (!match) throw new HttpError(401, "Sign in to continue.");
+  let claims;
+  try {
+    claims = jwt.verify(match[1], req.app.locals.config.jwtSecret, {
+      algorithms: ["HS256"], issuer: "quizly", audience: "quizly:web",
+    });
+  } catch { throw new HttpError(401, "Your session is invalid or expired. Please sign in again."); }
+  if (!objectId(claims.sub)) throw new HttpError(401, "Your session is invalid. Please sign in again.");
+  const user = await User.findById(claims.sub).select("_id name email");
+  if (!user) throw new HttpError(401, "This account is no longer available.");
+  req.user = user;
+  next();
 }
-module.exports={requireAuth}
+module.exports = { requireAuth };

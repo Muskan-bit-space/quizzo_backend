@@ -1,10 +1,16 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Quizly authentication, published quizzes, and self-paced attempts API",
+  "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node app.js",
+    "dev": "nodemon app.js",
+    "dev:local": "node scripts/dev-local.js",
+    "setup:local": "npm install --no-save --package-lock=false --ignore-scripts mongodb-memory-server@10",
+    "test": "node --test tests/*.test.js",
+    "test:integration": "node --test tests/integration/*.test.js",
+    "test:configured-db": "node scripts/test-configured-db.js"
   },
   "keywords": [],
   "author": "",
@@ -19,5 +25,8 @@
     "mongodb": "^7.0.0",
     "mongoose": "^9.0.1",
     "socket.io": "^4.8.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
   }
 }
